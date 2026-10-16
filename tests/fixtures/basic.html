@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>AI fixture</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+      }
+      @media (prefers-color-scheme: light) {
+        :root {
+          --bg: #ffffff;
+          --fg: #16181d;
+          --muted: #6b7280;
+        }
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #16181d;
+          --fg: #e8e8ea;
+          --muted: #a1a1aa;
+        }
+      }
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font: 16px/1.6 system-ui, sans-serif;
+        margin: 2rem auto;
+        max-width: 40rem;
+      }
+      h1 {
+        font-size: 1.5rem;
+      }
+      p,
+      textarea,
+      div[contenteditable] {
+        border-bottom: 1px solid var(--muted);
+        padding-bottom: 0.5rem;
+      }
+      textarea,
+      div[contenteditable] {
+        display: block;
+        width: 100%;
+      }
+    </style>
+  </head>
+  <body>
+    <h1 id="hero">AI is coming for your job</h1>
+
+    <p id="run">The captain said the air here is fine.</p>
+    <p id="caps">Ai Weiwei, and Ai Weiwei's studio.</p>
+    <p id="powered">An AI-powered toaster, an AI agent, and AI.</p>
+    <p id="several">AI, AI, and AI again.</p>
+
+    <textarea id="editor">AI in a textarea</textarea>
+    <div id="editable" contenteditable="true">AI in a contenteditable</div>
+    <pre id="sample"><code>const AI = "AI";</code></pre>
+
+    <div id="late"></div>
+
+    <script>
+      // A page that renders after load, to exercise the mutation observer.
+      window.setTimeout(function () {
+        const inserted = document.createElement("p");
+        inserted.id = "dynamic";
+        inserted.textContent = "A late-breaking AI paragraph.";
+        document.getElementById("late").appendChild(inserted);
+      }, 200);
+
+      // A page that edits a node in place, to exercise the characterData path.
+      window.setTimeout(function () {
+        document.getElementById("several").firstChild.data = "AI, AI, and AI again.";
+      }, 400);
+    </script>
+  </body>
+</html>

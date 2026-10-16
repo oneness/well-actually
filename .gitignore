@@ -1,0 +1,11 @@
+/node_modules
+/dist
+/result
+
+.direnv/
+.playwright-mcp/
+
+playwright-report/
+test-results/
+
+*.log

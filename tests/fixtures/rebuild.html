@@ -1,0 +1,20 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>rebuild fixture</title>
+  </head>
+  <body>
+    <p id="first">AI before the rebuild.</p>
+
+    <script>
+      // Some frameworks throw away the whole body and build a new one. The
+      // extension observes the document element so this keeps working.
+      window.setTimeout(function () {
+        const rebuilt = document.createElement("body");
+        rebuilt.innerHTML = '<p id="second">AI after the rebuild.</p>';
+        document.documentElement.replaceChild(rebuilt, document.body);
+      }, 150);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        with:
+          # Spelled out rather than read from package.json's packageManager
+          # field, so a failure here is a version change and nothing subtler.
+          version: 10.29.2
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm check
+
+  # The Playwright suite is not run here: it loads the extension into a headed
+  # Chromium. On a developer's NixOS machine the browsers come from the flake
+  # (`nix develop`, then `pnpm test:e2e`), which is the only path that works
+  # there. Adding it to CI means porting that to xvfb, which is not yet done.
