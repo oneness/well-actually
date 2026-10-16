@@ -1,12 +1,11 @@
 /**
- * Content script: apply the rules to the page's visible text, and keep applying
- * them as the page changes underneath us.
+ * Content script: apply the map to the page's visible text, and keep applying it
+ * as the page changes underneath us.
  */
 
-import { mayChange, replaceText } from "./core/replace";
-import { DEFAULT_RULES, type Rule } from "./core/rules";
-
-const RULES: readonly Rule[] = DEFAULT_RULES;
+import { mayChange, splitText, type Piece } from "./core/replace";
+import type { Settings } from "./core/settings";
+import { loadSettings } from "./storage";
 
 /**
  * Text inside these is not prose we should be editing: either it is not shown
@@ -25,6 +24,21 @@ const SKIP_TAGS = new Set([
   "TITLE",
 ]);
 
+/** The class the reveal-on-hover spans carry, and the stylesheet styles. */
+const REPLACED_CLASS = "wa-replaced";
+
+/**
+ * What we last wrote into a text node.
+ *
+ * A node is rewritten only when its content is not already our own output.
+ * Without this, a map like `AI → LLM` plus `LLM → large language model` would
+ * keep going in the page even though the pure engine stops at one correction,
+ * and our own spans would be walked and rewritten on the next pass.
+ */
+const written = new WeakMap<Text, string>();
+
+let settings: Settings;
+
 /** Whether this text node is somewhere we must leave alone. */
 function skippable(node: Text): boolean {
   const element = node.parentElement;
@@ -33,7 +47,8 @@ function skippable(node: Text): boolean {
 
 /** Whether this text node is one we would actually rewrite. */
 function rewriteable(node: Text): boolean {
-  return !skippable(node) && mayChange(node.data, RULES);
+  if (written.get(node) === node.data) return false;
+  return !skippable(node) && mayChange(node.data, settings.rules);
 }
 
 /**
@@ -62,18 +77,53 @@ function collect(root: Node, out: Text[]): void {
 }
 
 /**
- * Rewrite each node, writing only when the text really changed.
+ * Put the corrected text where the page had it.
  *
- * That conditional write is the whole reason this terminates: our own edit
- * fires a characterData mutation, the observer looks at the new text, finds no
- * rule can match it, and stops. No bookkeeping of which nodes we have seen, and
- * therefore nothing to go stale when a page rewrites a node in place.
+ * Plainly that is one assignment. With reveal on, each claimed piece becomes a
+ * span carrying the original in its title, which is the only way a stretch of
+ * text can be hovered — and the reason the option is off by default: a span is
+ * a real element, and a page that lays its text out as flex or grid items will
+ * notice one appearing.
+ */
+function write(node: Text, pieces: readonly Piece[]): void {
+  if (!pieces.some((piece) => piece.original !== undefined)) return;
+
+  if (!settings.reveal) {
+    const text = pieces.map((piece) => piece.text).join("");
+    written.set(node, text);
+    node.data = text;
+    return;
+  }
+
+  const parent = node.parentNode;
+  if (parent === null) return;
+
+  const fragment = document.createDocumentFragment();
+  for (const piece of pieces) {
+    if (piece.original === undefined) {
+      fragment.append(piece.text);
+      continue;
+    }
+    if (piece.text === "") continue;
+
+    const span = document.createElement("span");
+    span.className = REPLACED_CLASS;
+    span.title = piece.original;
+    span.textContent = piece.text;
+    if (span.firstChild !== null) written.set(span.firstChild as Text, piece.text);
+    fragment.append(span);
+  }
+
+  parent.replaceChild(fragment, node);
+}
+
+/**
+ * Rewrite each node. Writing only when the text really changed is what makes
+ * re-running a pass safe and keeps the mutation observer's callback for our own
+ * edit a no-op.
  */
 function apply(nodes: readonly Text[]): void {
-  for (const node of nodes) {
-    const next = replaceText(node.data, RULES);
-    if (next !== node.data) node.data = next;
-  }
+  for (const node of nodes) write(node, splitText(node.data, settings.rules));
 }
 
 let pending: Text[] = [];
@@ -113,7 +163,9 @@ function onMutations(records: readonly MutationRecord[]): void {
   enqueue(found);
 }
 
-function main(): void {
+async function start(): Promise<void> {
+  settings = await loadSettings();
+
   // Observing the document element rather than the body, and sweeping the same
   // root, so that a page which replaces its own <body> wholesale is still
   // covered. Text inside <head> is filtered out by SKIP_TAGS.
@@ -131,7 +183,7 @@ function main(): void {
 }
 
 if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => main(), { once: true });
+  document.addEventListener("DOMContentLoaded", () => void start(), { once: true });
 } else {
-  main();
+  void start();
 }

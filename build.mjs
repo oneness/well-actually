@@ -11,8 +11,8 @@ await rm(OUT, { recursive: true, force: true });
 await mkdir(OUT, { recursive: true });
 
 await build({
-  entryPoints: ["src/content.ts"],
-  outfile: `${OUT}/content.js`,
+  entryPoints: ["src/content.ts", "src/options.ts"],
+  outdir: OUT,
   bundle: true,
   format: "iife",
   target: ["chrome110", "firefox115"],

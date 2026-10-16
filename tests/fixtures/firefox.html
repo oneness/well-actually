@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>firefox smoke fixture</title>
+  </head>
+  <body>
+    <h1 id="hero">AI is coming for your job</h1>
+
+    <script>
+      // Playwright cannot drive stock Firefox with an extension loaded, so this
+      // page reports what it ended up saying back to the fixture server, where
+      // scripts/check-firefox.sh is waiting for it.
+      let attempts = 0;
+
+      const timer = window.setInterval(function () {
+        attempts += 1;
+        const hero = document.getElementById("hero").textContent || "";
+
+        // Report as soon as the extension has acted, or after two seconds
+        // regardless, so a page the extension ignored still reports.
+        if (hero.indexOf("LLM") === 0 || attempts > 20) {
+          window.clearInterval(timer);
+          window.location.replace("/report?hero=" + encodeURIComponent(hero));
+        }
+      }, 100);
+    </script>
+  </body>
+</html>

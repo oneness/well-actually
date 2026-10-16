@@ -1,12 +1,21 @@
 import { chromium, expect, test, type BrowserContext, type Page } from "@playwright/test";
 import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
-import { join, resolve } from "node:path";
+import { join } from "node:path";
+
+import { EXTENSION_DIR, OPTIONS_URL, seedSettings } from "./extension";
+
+const BASIC = "http://127.0.0.1:4173/basic.html";
+const REBUILD = "http://127.0.0.1:4173/rebuild.html";
+
+/** The built-in map: what an install nobody has configured has. */
+const BLUNT = { rules: [{ from: "AI", to: "LLM" }], reveal: false };
 
 /**
  * Loads the built extension into a real Chromium and shares it across the file,
- * because starting a browser profile with an extension is slow and the
- * extension keeps no state between tests.
+ * because starting a browser profile with an extension is slow. Tests that need
+ * a different map re-seed storage and reload, so the order they run in does not
+ * matter.
  */
 let context: BrowserContext;
 let page: Page;
@@ -20,8 +29,8 @@ test.beforeAll(async () => {
     // display (or under xvfb-run in CI).
     headless: false,
     args: [
-      `--disable-extensions-except=${resolve("dist")}`,
-      `--load-extension=${resolve("dist")}`,
+      `--disable-extensions-except=${EXTENSION_DIR}`,
+      `--load-extension=${EXTENSION_DIR}`,
     ],
   });
 
@@ -33,8 +42,15 @@ test.afterAll(async () => {
   await rm(userDataDir, { force: true, recursive: true });
 });
 
+/**
+ * Every test starts from the built-in map on a page the extension has already
+ * swept, so a test that reads unchanged text is reading it after the pass, not
+ * before it.
+ */
 test.beforeEach(async () => {
-  await page.goto("http://127.0.0.1:4173/basic.html");
+  await seedSettings(context, BLUNT);
+  await page.goto(BASIC);
+  await expect(page.locator("#hero")).toHaveText("LLM is coming for your job");
 });
 
 const text = (selector: string) => page.locator(selector).innerText();
@@ -49,8 +65,8 @@ test("leaves substrings and other capitalisations alone", async () => {
 });
 
 test("replaces around punctuation, inside a hyphenated phrase, and repeatedly", async () => {
-  expect(await text("#powered")).toBe("An LLM-powered toaster, an LLM agent, and LLM.");
-  expect(await text("#several")).toBe("LLM, LLM, and LLM again.");
+  await expect(page.locator("#powered")).toHaveText("An LLM-powered toaster, an LLM agent, and LLM.");
+  await expect(page.locator("#several")).toHaveText("LLM, LLM, and LLM again.");
 });
 
 test("leaves editors and code samples alone", async () => {
@@ -75,6 +91,94 @@ test("settles rather than rewriting in a loop", async () => {
 });
 
 test("survives a page replacing its own body", async () => {
-  await page.goto("http://127.0.0.1:4173/rebuild.html");
+  await page.goto(REBUILD);
   await expect(page.locator("#second")).toHaveText("LLM after the rebuild.");
+});
+
+test("uses the map the user saved", async () => {
+  await seedSettings(context, {
+    rules: [
+      { from: "AI", to: "ML" },
+      { from: "frontier model", to: "language model" },
+    ],
+    reveal: false,
+  });
+  await page.reload();
+
+  await expect(page.locator("#hero")).toHaveText("ML is coming for your job");
+});
+
+test("prefers the longest rule on a real page", async () => {
+  await seedSettings(context, {
+    rules: [
+      { from: "AI", to: "ML" },
+      { from: "AI-powered", to: "LLM-powered" },
+    ],
+    reveal: false,
+  });
+  await page.reload();
+
+  await expect(page.locator("#powered")).toHaveText("An LLM-powered toaster, an ML agent, and ML.");
+});
+
+test("does not correct its own correction", async () => {
+  await seedSettings(context, {
+    rules: [
+      { from: "AI", to: "LLM" },
+      { from: "LLM", to: "large language model" },
+    ],
+    reveal: false,
+  });
+  await page.reload();
+
+  // The second rule must not get a second go at the first rule's output.
+  await expect(page.locator("#hero")).toHaveText("LLM is coming for your job");
+});
+
+test("an empty map leaves the page alone", async () => {
+  await seedSettings(context, { rules: [{ from: "PING", to: "PONG" }], reveal: false });
+  await page.reload();
+
+  // The signal is the extension's own proof that it ran; without it, reading
+  // untouched text would pass whether or not the extension had done anything.
+  await expect(page.locator("#signal")).toHaveText("PONG");
+  expect(await text("#hero")).toBe("AI is coming for your job");
+});
+
+test("reveals the original wording on hover", async () => {
+  await seedSettings(context, { rules: [{ from: "AI", to: "LLM" }], reveal: true });
+  await page.reload();
+
+  const correction = page.locator("#hero span.wa-replaced");
+  await expect(correction).toHaveText("LLM");
+  await expect(correction).toHaveAttribute("title", "AI");
+  expect(await text("#hero")).toBe("LLM is coming for your job");
+});
+
+test("styles the revealed word so a reader can find it", async () => {
+  await seedSettings(context, { rules: [{ from: "AI", to: "LLM" }], reveal: true });
+  await page.reload();
+
+  const correction = page.locator("#hero span.wa-replaced");
+  await expect(correction).toHaveCount(1);
+
+  const decoration = await correction.evaluate((element) => getComputedStyle(element).textDecorationLine);
+  expect(decoration).toContain("underline");
+});
+
+test("the options page saves a map the content script then uses", async () => {
+  const options = await context.newPage();
+  await options.goto(OPTIONS_URL);
+
+  await options.getByRole("button", { name: /Strict/ }).click();
+  await options.locator("#rules tr").first().locator(".to").fill("ML");
+  await options.getByRole("button", { name: "Save" }).click();
+  await expect(options.locator("#status")).toContainText("Saved");
+
+  await options.reload();
+  await expect(options.locator("#rules tr").first().locator(".to")).toHaveValue("ML");
+  await options.close();
+
+  await page.goto(BASIC);
+  await expect(page.locator("#hero")).toHaveText("ML is coming for your job");
 });

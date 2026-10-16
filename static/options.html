@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Well, Actually</title>
+    <link rel="stylesheet" href="options.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Well, Actually</h1>
+        <p class="tagline">Replaces the word &ldquo;AI&rdquo; with &ldquo;LLM&rdquo; as you read.</p>
+      </header>
+
+      <section>
+        <h2>The map</h2>
+        <p class="hint">
+          A rule matches whole words, exactly as written, so <code>AI</code> does not touch
+          <code>said</code> or <code>Ai Weiwei</code>. The longest phrase wins, so
+          <code>AI models</code> beats <code>AI</code> however you order the list. Leave the
+          replacement empty to delete the word.
+        </p>
+
+        <table>
+          <thead>
+            <tr>
+              <th scope="col">Find</th>
+              <th scope="col">Replace with</th>
+              <th scope="col"><span class="visually-hidden">Remove</span></th>
+            </tr>
+          </thead>
+          <tbody id="rules"></tbody>
+        </table>
+
+        <p class="buttons">
+          <button type="button" id="add">Add a rule</button>
+          <button type="button" id="reset">Reset to default</button>
+        </p>
+      </section>
+
+      <section>
+        <h2>Start from a preset</h2>
+        <p class="hint">This fills the map above. Nothing changes until you save.</p>
+        <div id="presets" class="presets"></div>
+      </section>
+
+      <section>
+        <h2>Hover to reveal</h2>
+        <label class="toggle">
+          <input type="checkbox" id="reveal" />
+          <span>Show the original wording when you hover a correction</span>
+        </label>
+        <p class="hint">
+          Off by default, because it has to wrap each correction in a
+          <code>&lt;span&gt;</code>. That is a real element appearing in the page, and a site
+          that lays its text out as flex or grid items will notice. Turn it on if you want to
+          check what a page really said.
+        </p>
+      </section>
+
+      <p class="buttons">
+        <button type="button" id="save" class="primary">Save</button>
+        <span id="status" class="status" role="status"></span>
+      </p>
+
+      <p class="hint">
+        Changes apply to pages you load from now on. Tabs that are already open keep the map
+        they started with until you reload them.
+      </p>
+    </main>
+
+    <template id="row">
+      <tr>
+        <td><input type="text" class="from" spellcheck="false" aria-label="Find" /></td>
+        <td><input type="text" class="to" spellcheck="false" aria-label="Replace with" /></td>
+        <td><button type="button" class="remove" aria-label="Remove this rule">&times;</button></td>
+      </tr>
+    </template>
+
+    <script src="options.js"></script>
+  </body>
+</html>

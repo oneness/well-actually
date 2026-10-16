@@ -1,12 +1,15 @@
 // Serves tests/fixtures over http, because content scripts do not run on
-// file:// pages without extra user opt-in. Used by playwright.config.ts.
+// file:// pages without extra user opt-in. Used by playwright.config.ts, and by
+// scripts/check-firefox.sh for its /report endpoint.
 import { createServer } from "node:http";
-import { readFile } from "node:fs/promises";
+import { readFile, writeFile } from "node:fs/promises";
 import { extname, join, normalize } from "node:path";
 import { fileURLToPath } from "node:url";
+import { tmpdir } from "node:os";
 
 const root = fileURLToPath(new URL(".", import.meta.url));
 const port = Number(process.env.PORT ?? 4173);
+const reportPath = process.env.REPORT_PATH ?? join(tmpdir(), "well-actually-firefox-report.txt");
 
 const TYPES = {
   ".css": "text/css; charset=utf-8",
@@ -17,6 +20,15 @@ const TYPES = {
 createServer(async (request, response) => {
   const [path = "/"] = (request.url ?? "/").split("?");
   const requested = normalize(decodeURIComponent(path));
+
+  // A fixture page reporting its own text back, for the Firefox check.
+  if (requested === "/report") {
+    const url = new URL(request.url ?? "/", `http://127.0.0.1:${port}`);
+    await writeFile(reportPath, url.searchParams.get("hero") ?? "", "utf8");
+    response.writeHead(204).end();
+    return;
+  }
+
   const file = join(root, requested === "/" ? "basic.html" : requested);
 
   if (!file.startsWith(root)) {

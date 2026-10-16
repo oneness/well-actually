@@ -1,0 +1,11 @@
+/*
+ * Only ever matches the spans reveal-on-hover creates, and is injected on every
+ * page regardless, because a stylesheet that arrives later would restyle text
+ * the reader is already looking at.
+ */
+.wa-replaced {
+  cursor: help;
+  text-decoration: underline dotted;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 0.2em;
+}
