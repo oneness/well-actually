@@ -151,7 +151,7 @@ test("reveals the original wording on hover", async () => {
 
   const correction = page.locator("#hero span.wa-replaced");
   await expect(correction).toHaveText("LLM");
-  await expect(correction).toHaveAttribute("title", "AI");
+  await expect(correction).toHaveAttribute("data-wa-original", "AI");
   expect(await text("#hero")).toBe("LLM is coming for your job");
 });
 
@@ -164,6 +164,42 @@ test("styles the revealed word so a reader can find it", async () => {
 
   const decoration = await correction.evaluate((element) => getComputedStyle(element).textDecorationLine);
   expect(decoration).toContain("underline");
+});
+
+test("the tooltip appears on hover and says what it is showing", async () => {
+  await seedSettings(context, { rules: [{ from: "AI", to: "LLM" }], reveal: true });
+  await page.reload();
+
+  const correction = page.locator("#hero span.wa-replaced");
+  await expect(correction).toHaveCount(1);
+
+  const tooltip = (property: string) =>
+    correction.evaluate(
+      (element, name) => getComputedStyle(element, "::after").getPropertyValue(name),
+      property,
+    );
+
+  await expect.poll(() => tooltip("opacity")).toBe("0");
+  await correction.hover();
+  await expect.poll(() => tooltip("opacity")).toBe("1");
+
+  // The tooltip holds the very word the map replaces, so this is also the check
+  // that it is generated content: as a text node the content script would have
+  // found it and rewritten it to "original: LLM".
+  const content = await tooltip("content");
+  expect(content).toContain("original");
+  expect(content).toContain("AI");
+});
+
+test("does not turn the pointer into a question mark", async () => {
+  await seedSettings(context, { rules: [{ from: "AI", to: "LLM" }], reveal: true });
+  await page.reload();
+
+  const correction = page.locator("#hero span.wa-replaced");
+  await expect(correction).toHaveCount(1);
+
+  // "auto" is the initial value: the point is that we no longer set one.
+  expect(await correction.evaluate((element) => getComputedStyle(element).cursor)).toBe("auto");
 });
 
 test("the options page saves a map the content script then uses", async () => {

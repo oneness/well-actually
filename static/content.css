@@ -2,10 +2,55 @@
  * Only ever matches the spans reveal-on-hover creates, and is injected on every
  * page regardless, because a stylesheet that arrives later would restyle text
  * the reader is already looking at.
+ *
+ * The pointer is deliberately left alone. This used to be `cursor: help`, which
+ * a Linux theme draws as an arrow with a question mark on it — the first thing
+ * a reader saw when they went looking for the original wording, before the
+ * tooltip had even appeared.
  */
 .wa-replaced {
-  cursor: help;
+  position: relative;
   text-decoration: underline dotted;
   text-decoration-thickness: 1px;
   text-underline-offset: 0.2em;
+}
+
+/*
+ * The tooltip is generated content rather than an element, and that is the
+ * whole trick: it is not a text node, so the content script cannot find it and
+ * cannot rewrite it. An element holding this wording would be rewritten on the
+ * next pass — the tooltip for a correction of "AI" contains "AI".
+ *
+ * It also appears immediately, where a `title` waits about a second, and it can
+ * say what it is showing rather than presenting the original wording bare.
+ */
+.wa-replaced::after {
+  background: #f5f6f8;
+  border: 1px solid #d9dbe0;
+  border-radius: 4px;
+  bottom: 100%;
+  color: #16181d;
+  content: "original: " attr(data-wa-original);
+  font: 12px/1.4 system-ui, sans-serif;
+  left: 0;
+  margin-bottom: 3px;
+  opacity: 0;
+  padding: 2px 6px;
+  pointer-events: none;
+  position: absolute;
+  transition: opacity 60ms ease-out;
+  white-space: nowrap;
+  z-index: 2147483647;
+}
+
+@media (prefers-color-scheme: dark) {
+  .wa-replaced::after {
+    background: #1c1f26;
+    border-color: #33373f;
+    color: #f5f6f8;
+  }
+}
+
+.wa-replaced:hover::after {
+  opacity: 1;
 }

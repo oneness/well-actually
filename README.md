@@ -128,13 +128,25 @@ is what it is for.
 ## Hover to reveal
 
 A correction can show the original wording on hover, which is the feature that
-makes the extension trustworthy rather than merely confident.
+makes the extension trustworthy rather than merely confident. The tooltip reads
+`original: AI`; the wording is one string in `static/content.css` if you want it
+to say something else.
 
-It is off by default, because it has to wrap each correction in a `<span>`
-carrying the original in its `title` — a real element appearing in the page. A
-site that lays its text out as flex or grid items will notice one appearing, and
-its own CSS may style it. Turning it on is a fair trade if you want to check
-what a page really said; leaving it off is the safe default.
+It appears immediately, and it is generated content rather than an element. That
+matters twice over. A native `title` tooltip cannot say what it is showing and
+waits about a second before it appears, and an element holding this wording
+would be found and rewritten by the extension itself — the tooltip for a
+correction of "AI" contains "AI".
+
+It is off by default, because it has to wrap each correction in a `<span>`: a
+real element appearing in the page. A site that lays its text out as flex or
+grid items will notice one appearing, and its own CSS may style it. Two smaller
+consequences: the tooltip is positioned by the page's own layout, so a container
+with `overflow: hidden` can clip it, and the reveal is a pointer affordance — a
+screen reader gets the corrected text and no tooltip.
+
+Turning it on is a fair trade if you want to check what a page really said;
+leaving it off is the safe default.
 
 ## Development
 

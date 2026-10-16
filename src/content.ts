@@ -27,6 +27,9 @@ const SKIP_TAGS = new Set([
 /** The class the reveal-on-hover spans carry, and the stylesheet styles. */
 const REPLACED_CLASS = "wa-replaced";
 
+/** Where the reveal-on-hover spans keep the wording they replaced. */
+const ORIGINAL_ATTRIBUTE = "waOriginal";
+
 /**
  * What we last wrote into a text node.
  *
@@ -80,10 +83,15 @@ function collect(root: Node, out: Text[]): void {
  * Put the corrected text where the page had it.
  *
  * Plainly that is one assignment. With reveal on, each claimed piece becomes a
- * span carrying the original in its title, which is the only way a stretch of
- * text can be hovered — and the reason the option is off by default: a span is
- * a real element, and a page that lays its text out as flex or grid items will
- * notice one appearing.
+ * span carrying the original in a data attribute for the stylesheet to read —
+ * which is the only way a stretch of text can be hovered, and the reason the
+ * option is off by default: a span is a real element, and a page that lays its
+ * text out as flex or grid items will notice one appearing.
+ *
+ * The wording is not put in a `title`, because a native tooltip cannot say what
+ * it is showing and appears a second late, and it is not put in a child element,
+ * because that element's text would be a text node — one this script would then
+ * find, and rewrite. See the stylesheet.
  */
 function write(node: Text, pieces: readonly Piece[]): void {
   if (!pieces.some((piece) => piece.original !== undefined)) return;
@@ -108,7 +116,7 @@ function write(node: Text, pieces: readonly Piece[]): void {
 
     const span = document.createElement("span");
     span.className = REPLACED_CLASS;
-    span.title = piece.original;
+    span.dataset[ORIGINAL_ATTRIBUTE] = piece.original;
     span.textContent = piece.text;
     if (span.firstChild !== null) written.set(span.firstChild as Text, piece.text);
     fragment.append(span);

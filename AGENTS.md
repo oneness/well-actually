@@ -40,6 +40,11 @@ with "LLM" in page text as the reader sees it.
   without it the map behaves one way in the pure engine and another way in the
   page, and reveal-on-hover spans get walked and rewritten. Do not remove it
   without a test that a two-rule map still settles.
+- **Any wording the extension puts into a page must be generated content, not a
+  text node.** The tooltip in `static/content.css` is an `::after` with `attr()`
+  for exactly this reason: the text it shows contains the word the map replaces,
+  so as an element it would be found by the content script and rewritten into
+  nonsense.
 - **A rule is two literal strings.** No regex mode, no flags object, no
   per-site overrides. Adding one of those means removing something it replaces.
 - **New rules and presets must keep the article in front of them grammatical.**
