@@ -20,7 +20,10 @@ with "LLM" in page text as the reader sees it.
 - `tests/` — vitest for the pure functions, Playwright for the DOM half,
   `tests/fixtures/` for the pages both run against.
 - `scripts/check-firefox.sh` — the real-Firefox smoke check.
+- `scripts/check-package.sh` — verifies the store archives themselves.
 - `build.mjs` — esbuild, two bundles plus a versioned manifest copy.
+- `package.mjs` — the two store archives, written by hand so the toolchain has
+  no packaging dependency and the output stays reproducible.
 
 ## Rules for changes
 
@@ -48,10 +51,16 @@ with "LLM" in page text as the reader sees it.
   the options page. A second needs justifying in the README.
 - **Verify before claiming success.** `pnpm check` must pass (it builds and lints
   the manifest against AMO's rules), a change to the DOM half needs
-  `pnpm test:e2e`, and a change to how the extension starts up needs
-  `pnpm check:firefox`.
+  `pnpm test:e2e`, a change to how the extension starts up needs
+  `pnpm check:firefox`, and anything being released needs `pnpm check:package`.
 - **Never hand-edit `static/manifest.json`'s `version`.** `build.mjs` stamps it
   from `package.json`.
+- **Keep the archives reproducible.** The pinned DOS timestamp in `package.mjs`
+  is deliberate: it is what lets a published archive be checked against the tag
+  it came from. Do not introduce a timestamp or a random ordering.
+- **Test a packaged artifact, not just `dist/`.** The e2e suite reads
+  `WA_EXTENSION_DIR`, which is how `scripts/check-package.sh` runs the whole
+  suite against the extracted Chrome archive.
 
 ## Environment
 

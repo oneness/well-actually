@@ -2,7 +2,7 @@ import { expect, type BrowserContext } from "@playwright/test";
 import { createHash } from "node:crypto";
 import { resolve } from "node:path";
 
-export const EXTENSION_DIR = resolve("dist");
+export const EXTENSION_DIR = resolve(process.env.WA_EXTENSION_DIR ?? "dist");
 
 /**
  * Chromium derives an unpacked extension's id from the absolute path of its

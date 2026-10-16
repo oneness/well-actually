@@ -141,9 +141,29 @@ sweep, and every page would look untouched.
 - `src/options.ts` — the options page. It reads and writes the settings record
   through the same validation the content script uses.
 
+## Packaging
+
+```sh
+pnpm package        # artifacts/well-actually-<version>-{chrome,firefox}.zip
+pnpm check:package  # verifies those archives, and loads the Chrome one into Chromium
+```
+
+Ten files each, `manifest.json` at the root, no source maps. The archives are
+byte-for-byte reproducible, so a published file can be regenerated from the tag
+it was built at. The Chrome archive has `browser_specific_settings` removed,
+because Chrome warns about keys it cannot use and that warning would sit in
+front of a reviewer.
+
+`pnpm check:package` tests the archives rather than the directory they came
+from, which is the point: the archive is what gets uploaded.
+
+What to fill in at each store, and what is still missing, is in
+[docs/submission.md](docs/submission.md).
+
 ## Not built yet
 
-- Packaging for the Chrome Web Store and addons.mozilla.org.
+- Screenshots for the two listings, which want a browser and an eye rather than
+  a build script.
 - The e2e suite in CI, which needs xvfb for the headed Chromium.
 - A switch to turn the extension off for one site, for the pages where you do
   want to read about AI.
