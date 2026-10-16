@@ -19,8 +19,10 @@ with "LLM" in page text as the reader sees it.
   anything else copied verbatim into `dist/`.
 - `tests/` — vitest for the pure functions, Playwright for the DOM half,
   `tests/fixtures/` for the pages both run against.
-- `scripts/check-firefox.sh` — the real-Firefox smoke check.
-- `scripts/check-package.sh` — verifies the store archives themselves.
+- `scripts/check-firefox.sh` — installs the packaged XPI into a throwaway
+  Firefox profile and checks a page gets rewritten.
+- `scripts/check-package.sh` — verifies the store archives themselves, and runs
+  the Firefox check against the XPI.
 - `build.mjs` — esbuild, two bundles plus a versioned manifest copy.
 - `package.mjs` — the two store archives, written by hand so the toolchain has
   no packaging dependency and the output stays reproducible.
@@ -67,6 +69,18 @@ with "LLM" in page text as the reader sees it.
 Use `nix develop`. It supplies Node, pnpm, and — on Linux — the Playwright
 browser bundle from nixpkgs, so `pnpm test:e2e` works without
 `playwright install` and without a version drift between the two.
+
+`pnpm check:firefox` and `pnpm check:package` also want a real Firefox on the
+machine. They look for `firefox`, then `firefox-devedition`, and take
+`FIREFOX=/path/to/firefox` if neither is the one you want.
+
+## Dogfooding
+
+The install a developer uses is the install `scripts/check-firefox.sh` performs:
+the packaged XPI in a profile's `extensions/` directory, plus
+`extensions.autoDisableScopes = 0`, because Firefox switches off anything it
+finds there by itself. Installing through `about:addons` instead avoids the pref,
+because an install you started is not a sideload. The README explains both.
 
 ## Icons
 

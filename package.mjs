@@ -139,6 +139,8 @@ const contents = await Promise.all(
 await rm(ARTIFACTS, { recursive: true, force: true });
 await mkdir(ARTIFACTS, { recursive: true });
 
+const written = {};
+
 for (const target of ["chrome", "firefox"]) {
   const entries = contents.map((entry) => {
     if (entry.name !== "manifest.json") return entry;
@@ -152,6 +154,13 @@ for (const target of ["chrome", "firefox"]) {
   });
 
   const file = join(ARTIFACTS, `well-actually-${pkg.version}-${target}.zip`);
-  await writeFile(file, zip(entries));
+  written[target] = zip(entries);
+  await writeFile(file, written[target]);
   console.log(`${file} — ${entries.length} files`);
 }
+
+// The Firefox archive again under the name a local install wants. An XPI is a
+// zip, and "Install Add-on From File" only offers files with that extension.
+const xpi = join(ARTIFACTS, `well-actually-${pkg.version}.xpi`);
+await writeFile(xpi, written.firefox);
+console.log(`${xpi} — the Firefox archive, for installing by hand`);

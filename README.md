@@ -42,9 +42,40 @@ Build it first (`pnpm build`), then:
 - **Chrome** — `chrome://extensions`, turn on Developer mode, *Load unpacked*,
   choose `dist/`.
 - **Firefox** — `about:debugging#/runtime/this-firefox`, *Load Temporary
-  Add-on*, choose `dist/manifest.json`.
+  Add-on*, choose `dist/manifest.json`. This lasts until Firefox restarts.
 
 The options page is in the extensions menu, under *Options*, in both.
+
+### Keeping it in Firefox while you dogfood it
+
+A temporary add-on is gone after a restart, which is no good for reading with.
+`pnpm package` also writes `artifacts/well-actually-<version>.xpi` for a real
+install. In Developer Edition, open `about:addons`, use the gear icon's
+*Install Add-on From File…*, and pick that file — or drag it onto the page.
+
+That works unsigned for two reasons, both of which are worth knowing:
+
+- Developer Edition ships `pref("xpinstall.signatures.required", false)`, so it
+  does not check signatures at all. Release Firefox does, and there the only
+  answer is to get the archive signed by addons.mozilla.org.
+- An install you started yourself is not a sideload, so Firefox leaves it
+  enabled.
+
+Copying the same file into
+`<profile>/extensions/well-actually@oneness.github.io.xpi` also installs it, and
+that is the scriptable version — but Firefox auto-disables anything it finds
+there on its own. It appears as installed and switched off, with nothing in the
+UI explaining why. The pref behind that is:
+
+```
+about:config → extensions.autoDisableScopes → 0
+```
+
+Two more things worth knowing while dogfooding: re-installing a build with the
+same version number may not take, so bump `version` in `package.json` if a change
+seems to have gone missing; and `pnpm exec web-ext run --source-dir dist` starts
+Firefox with the extension in it and reloads as you rebuild, which is the faster
+loop while the code is still moving.
 
 ## The map
 
@@ -126,12 +157,14 @@ load extensions without one. Inside `nix develop` the browsers come from
 nixpkgs, so do not run `playwright install`.
 
 `pnpm check:firefox` is separate because it needs a real Firefox on the machine
-(`FIREFOX=/path/to/firefox` to choose one) and because Playwright cannot drive
-stock Firefox with an extension loaded. It launches Firefox through `web-ext`,
-and the fixture page reports its own text back to the fixture server, so the
-check covers the thing that fails silently on Firefox: if `storage.sync` were
-unavailable, reading the settings would reject, the content script would never
-sweep, and every page would look untouched.
+(`FIREFOX=/path/to/firefox` to choose one; by default it looks for `firefox`,
+then `firefox-devedition`) and because Playwright cannot drive stock Firefox with
+an extension loaded. It installs the packaged XPI into a throwaway profile and
+launches Firefox headlessly, and the fixture page reports its own text back to
+the fixture server — so the check covers the thing that fails silently on
+Firefox: if `storage.sync` were unavailable, reading the settings would reject,
+the content script would never sweep, and every page would look untouched. It is
+the same install a dogfooding profile gets, so a broken XPI fails here first.
 
 - `src/core/` — pure functions, no DOM. `replaceText` and `splitText` are the
   whole product, and `tests/replace.test.ts` is the argument that they are

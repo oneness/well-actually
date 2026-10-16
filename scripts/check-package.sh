@@ -60,11 +60,17 @@ grep -q '"id"' "$work/firefox/manifest.json" ||
 grep -q data_collection_permissions "$work/firefox/manifest.json" ||
   fail "the Firefox manifest does not declare what it collects"
 
+echo "==> the local-install copy is the Firefox archive"
+cmp "$firefox_zip" artifacts/*.xpi || fail "the .xpi is not the Firefox archive"
+
 echo "==> Mozilla's linter accepts the Firefox archive"
 pnpm exec web-ext lint --source-dir "$work/firefox" --warnings-as-errors
 
 echo "==> the Chrome archive works in Chromium"
 WA_EXTENSION_DIR="$work/chrome" pnpm test:e2e
+
+echo "==> the XPI installs into a fresh Firefox profile"
+./scripts/check-firefox.sh
 
 echo
 echo "check-package: ok"
