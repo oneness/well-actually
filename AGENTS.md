@@ -41,3 +41,18 @@ with "LLM" in page text as the reader sees it.
 Use `nix develop`. It supplies Node, pnpm, and — on Linux — the Playwright
 browser bundle from nixpkgs, so `pnpm test:e2e` works without
 `playwright install` and without a version drift between the two.
+
+## Icons
+
+`static/icons/icon.svg` is the source. The PNGs next to it are generated from
+that file and committed, because Chrome will not accept an SVG icon. After
+editing the SVG:
+
+```sh
+for size in 16 32 48 128; do
+  nix run nixpkgs#librsvg -- -w $size -h $size \
+    -o static/icons/icon-$size.png static/icons/icon.svg
+done
+```
+
+Do not hand-edit the PNGs.

@@ -1,6 +1,6 @@
 /**
- * The pure heart of the extension: a string in, the corrected string out. No
- * DOM, no storage, no browser — so it is cheap to test and easy to reason about.
+ * The pure heart of the extension: a string in, corrected pieces out. No DOM,
+ * no storage, no browser — so it is cheap to test and easy to reason about.
  */
 
 import { DEFAULT_RULES, type Rule } from "./rules";
@@ -18,33 +18,56 @@ const NOT_WORD_AFTER = "(?![A-Za-z0-9_])";
 /** Characters that mean something in a regular expression but must be literal here. */
 const REGEX_META = /[.*+?^${}()|[\]\\]/g;
 
-interface CompiledRule {
-  from: string;
-  to: string;
+/**
+ * A stretch of text: either as the page wrote it, or as a rule rewrote it.
+ * `original` is set only on pieces a rule claimed, and is the wording that
+ * reveal-on-hover gives back.
+ */
+export interface Piece {
+  text: string;
+  original?: string;
+}
+
+interface Matcher {
+  /** Rules in the order their alternatives appear in `pattern`. */
+  ordered: readonly Rule[];
   pattern: RegExp;
 }
 
-const patternCache = new Map<string, readonly CompiledRule[]>();
+const matcherCache = new Map<string, Matcher>();
 
-function compile(rules: readonly Rule[]): readonly CompiledRule[] {
+function matcher(rules: readonly Rule[]): Matcher {
   // Keyed on both fields, and JSON-encoded so that no combination of `from` and
   // `to` can collide with another: two rules that share a `from` but differ in
   // `to` are different entries.
   const key = JSON.stringify(rules.map((rule) => [rule.from, rule.to]));
-  let compiled = patternCache.get(key);
+  let found = matcherCache.get(key);
 
-  if (compiled === undefined) {
-    compiled = rules.map((rule) => {
-      const literal = rule.from.replace(REGEX_META, "\\$&");
-      return {
-        ...rule,
-        pattern: new RegExp(`${NOT_WORD_BEFORE}${literal}${NOT_WORD_AFTER}`, "g"),
-      };
-    });
-    patternCache.set(key, compiled);
+  if (found === undefined) {
+    // Longest `from` first, so a phrase rule wins over a shorter rule starting
+    // at the same place — "AI models" beats "AI". Equal lengths keep the order
+    // the map was written in.
+    const ordered = [...rules].sort((a, b) => b.from.length - a.from.length);
+    const source = ordered
+      .map((rule, index) => {
+        const literal = rule.from.replace(REGEX_META, "\\$&");
+        return `(?<m${index}>${NOT_WORD_BEFORE}${literal}${NOT_WORD_AFTER})`;
+      })
+      .join("|");
+
+    found = { ordered, pattern: new RegExp(source, "g") };
+    matcherCache.set(key, found);
   }
 
-  return compiled;
+  return found;
+}
+
+/** Which rule's alternative the engine landed on. */
+function ruleFor(match: RegExpExecArray, ordered: readonly Rule[]): Rule | undefined {
+  for (let index = 0; index < ordered.length; index++) {
+    if (match.groups?.[`m${index}`] !== undefined) return ordered[index];
+  }
+  return undefined;
 }
 
 /**
@@ -57,22 +80,40 @@ export function mayChange(text: string, rules: readonly Rule[] = DEFAULT_RULES):
 }
 
 /**
- * Apply every rule, in order, to `text`.
+ * Cut `text` into the pieces a rule claims and the pieces it leaves alone.
  *
- * Rules are literal and each one sees the previous one's output, so a map like
- * `AI → LLM` plus `LLM → large language model` would chain. Nothing in the
- * default map chains, and the content script only writes when the result
- * differs, which is what keeps a re-render from looping.
+ * Each spot in the text is claimed at most once: the map is a set of
+ * corrections, not a pipeline, so a rule never rewrites another rule's output.
+ * That is what makes the result predictable, and it is what makes
+ * reveal-on-hover unambiguous — every rewritten piece has exactly one original.
+ */
+export function splitText(text: string, rules: readonly Rule[] = DEFAULT_RULES): Piece[] {
+  if (!mayChange(text, rules)) return [{ text }];
+
+  const { ordered, pattern } = matcher(rules);
+  const pieces: Piece[] = [];
+  let cursor = 0;
+
+  for (const match of text.matchAll(pattern)) {
+    const rule = ruleFor(match, ordered);
+    if (rule === undefined) continue;
+
+    const start = match.index ?? cursor;
+    if (start > cursor) pieces.push({ text: text.slice(cursor, start) });
+    pieces.push({ text: rule.to, original: match[0] });
+    cursor = start + match[0].length;
+  }
+
+  if (cursor < text.length) pieces.push({ text: text.slice(cursor) });
+  return pieces;
+}
+
+/**
+ * Apply the map to `text`. `splitText` with the pieces joined back up, which
+ * keeps one engine behind both the plain rewrite and the hovering reveal.
  */
 export function replaceText(text: string, rules: readonly Rule[] = DEFAULT_RULES): string {
-  if (!mayChange(text, rules)) return text;
-
-  let out = text;
-  for (const { from, to, pattern } of compile(rules)) {
-    if (!out.includes(from)) continue;
-    // A replacer function, not a replacement string, so that "$&" and friends
-    // in a rule's `to` are written literally instead of being interpreted.
-    out = out.replace(pattern, () => to);
-  }
-  return out;
+  return splitText(text, rules)
+    .map((piece) => piece.text)
+    .join("");
 }

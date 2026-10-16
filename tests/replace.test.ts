@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { mayChange, replaceText } from "../src/core/replace";
+import { mayChange, replaceText, splitText } from "../src/core/replace";
 import { DEFAULT_RULES, type Rule } from "../src/core/rules";
 
 const SWAP: readonly Rule[] = [{ from: "AI", to: "LLM" }];
@@ -63,12 +63,29 @@ describe("replaceText", () => {
     expect(replaceText("", SWAP)).toBe("");
   });
 
-  it("applies rules in order, each seeing the previous output", () => {
-    const chain: readonly Rule[] = [
+  it("does not let one rule rewrite another rule's output", () => {
+    const map: readonly Rule[] = [
       { from: "AI", to: "LLM" },
       { from: "LLM", to: "large language model" },
     ];
-    expect(replaceText("AI", chain)).toBe("large language model");
+    expect(replaceText("AI", map)).toBe("LLM");
+  });
+
+  it("prefers the longest matching rule", () => {
+    const map: readonly Rule[] = [
+      { from: "AI", to: "LLM" },
+      { from: "AI models", to: "LLMs" },
+    ];
+    expect(replaceText("AI models", map)).toBe("LLMs");
+    expect(replaceText("AI model", map)).toBe("LLM model");
+  });
+
+  it("prefers the longest rule whichever order the map is written in", () => {
+    const rules: readonly Rule[] = [
+      { from: "AI models", to: "LLMs" },
+      { from: "AI", to: "LLM" },
+    ];
+    expect(replaceText("AI models", rules)).toBe("LLMs");
   });
 
   it("treats regex metacharacters in a rule as literal text", () => {
@@ -95,6 +112,33 @@ describe("replaceText", () => {
   it("uses the built-in map by default", () => {
     expect(replaceText("AI everywhere")).toBe("LLM everywhere");
     expect(DEFAULT_RULES).toEqual([{ from: "AI", to: "LLM" }]);
+  });
+});
+
+describe("splitText", () => {
+  it("marks only the pieces a rule claimed", () => {
+    expect(splitText("An AI toaster", SWAP)).toEqual([
+      { text: "An " },
+      { text: "LLM", original: "AI" },
+      { text: " toaster" },
+    ]);
+  });
+
+  it("returns one untouched piece when nothing matches", () => {
+    expect(splitText("nothing here", SWAP)).toEqual([{ text: "nothing here" }]);
+  });
+
+  it("accounts for the whole string, joined back up", () => {
+    const text = "AI and AI-powered and AI.";
+    expect(splitText(text, SWAP).map((piece) => piece.text).join("")).toBe(replaceText(text, SWAP));
+  });
+
+  it("gives every rewritten piece exactly one original", () => {
+    const rewritten = splitText("AI, AI", SWAP).filter((piece) => piece.original !== undefined);
+    expect(rewritten).toEqual([
+      { text: "LLM", original: "AI" },
+      { text: "LLM", original: "AI" },
+    ]);
   });
 });
 

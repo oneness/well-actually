@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128">
+  <!-- Source for the PNGs in this directory. Regenerate with the command in
+       AGENTS.md; do not edit the PNGs by hand. -->
+  <rect width="128" height="128" rx="28" fill="#171a21" />
+  <text
+    x="64"
+    y="82"
+    text-anchor="middle"
+    font-family="DejaVu Sans"
+    font-size="66"
+    font-weight="bold"
+    fill="#f5f6f8"
+  >AI</text>
+  <line x1="25" y1="58" x2="103" y2="58" stroke="#ff7a45" stroke-width="7" stroke-linecap="round" />
+</svg>

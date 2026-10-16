@@ -17,8 +17,8 @@ export interface Rule {
  *
  * One rule, on purpose. "AI" is almost always a large language model or a
  * product wrapped around one, and the whole point of the extension is to stop
- * letting the larger word do the marketing's work. Adding more here would turn
- * a correction into an opinion.
+ * letting the larger word do the marketing's work. The options page offers
+ * more, but this is what an unconfigured install does.
  *
  * Matching is case-sensitive, so "Ai Weiwei" survives untouched. A second
  * capitalisation would need its own rule.
