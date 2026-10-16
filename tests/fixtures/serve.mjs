@@ -21,10 +21,11 @@ createServer(async (request, response) => {
   const [path = "/"] = (request.url ?? "/").split("?");
   const requested = normalize(decodeURIComponent(path));
 
-  // A fixture page reporting its own text back, for the Firefox check.
+  // A fixture page reporting what it ended up with, for the Firefox check.
   if (requested === "/report") {
-    const url = new URL(request.url ?? "/", `http://127.0.0.1:${port}`);
-    await writeFile(reportPath, url.searchParams.get("hero") ?? "", "utf8");
+    const chunks = [];
+    for await (const chunk of request) chunks.push(chunk);
+    await writeFile(reportPath, Buffer.concat(chunks).toString("utf8"), "utf8");
     response.writeHead(204).end();
     return;
   }

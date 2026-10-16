@@ -7,11 +7,27 @@
   <body>
     <h1 id="hero">AI is coming for your job</h1>
 
+    <!-- Carries the class the stylesheet styles, without the extension needing
+         to be told to reveal anything: what this page reports about it is how
+         the Firefox check notices when the tooltip stops working there. -->
+    <p><span id="tooltip" class="wa-replaced" data-wa-original="AI">LLM</span></p>
+
     <script>
       // Playwright cannot drive stock Firefox with an extension loaded, so this
-      // page reports what it ended up saying back to the fixture server, where
+      // page reports what it ended up with back to the fixture server, where
       // scripts/check-firefox.sh is waiting for it.
       let attempts = 0;
+
+      function report() {
+        const tooltip = getComputedStyle(document.getElementById("tooltip"), "::after");
+        return fetch("/report", {
+          method: "POST",
+          body: JSON.stringify({
+            hero: document.getElementById("hero").textContent || "",
+            tooltip: tooltip.content,
+          }),
+        });
+      }
 
       const timer = window.setInterval(function () {
         attempts += 1;
@@ -21,7 +37,7 @@
         // regardless, so a page the extension ignored still reports.
         if (hero.indexOf("LLM") === 0 || attempts > 20) {
           window.clearInterval(timer);
-          window.location.replace("/report?hero=" + encodeURIComponent(hero));
+          report();
         }
       }, 100);
     </script>

@@ -72,12 +72,32 @@ if [ ! -s "$report" ]; then
   exit 1
 fi
 
-hero="$(cat "$report")"
-expected="LLM is coming for your job"
+# The page reports the heading the extension rewrote, and what Firefox computed
+# for the tooltip of a span carrying the class the stylesheet styles. The second
+# one is the only check anywhere that the tooltip works on Firefox: Playwright
+# cannot hover a page in stock Firefox, so this reads the computed style instead.
+REPORT_FILE="$report" node -e '
+const { readFileSync } = require("node:fs");
 
-if [ "$hero" != "$expected" ]; then
-  echo "check-firefox: FAIL — the page said '$hero', expected '$expected'" >&2
-  exit 1
-fi
+const report = JSON.parse(readFileSync(process.env.REPORT_FILE, "utf8"));
+const expected = "LLM is coming for your job";
+const tooltip = String(report.tooltip);
+const problems = [];
 
-echo "check-firefox: ok — $xpi installed into a fresh profile and the page reads '$hero'"
+if (report.hero !== expected) {
+  problems.push(`the page said ${JSON.stringify(report.hero)}, expected ${JSON.stringify(expected)}`);
+}
+if (!tooltip.includes("original")) {
+  problems.push(`the tooltip said ${JSON.stringify(tooltip)}, expected it to name what it shows`);
+}
+if (!tooltip.includes("AI")) {
+  problems.push(`the tooltip said ${JSON.stringify(tooltip)}, expected it to carry the original wording`);
+}
+
+if (problems.length > 0) {
+  for (const problem of problems) console.error(`check-firefox: FAIL — ${problem}`);
+  process.exit(1);
+}
+
+console.log(`check-firefox: ok — ${JSON.stringify(report.hero)} and a tooltip of ${JSON.stringify(tooltip)}`);
+'
