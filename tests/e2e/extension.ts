@@ -18,6 +18,24 @@ export function extensionId(directory: string): string {
 export const OPTIONS_URL = `chrome-extension://${extensionId(EXTENSION_DIR)}/options.html`;
 
 /**
+ * Empty the extension's storage, so the built-in answers apply. Used to check
+ * what an install nobody has configured does.
+ */
+export async function clearSettings(context: BrowserContext): Promise<void> {
+  const page = await context.newPage();
+  await page.goto(OPTIONS_URL);
+  await expect(page.locator("h1")).toHaveText("Well, Actually");
+
+  await page.evaluate(() =>
+    (
+      globalThis as unknown as { chrome: { storage: { local: { clear(): Promise<void> } } } }
+    ).chrome.storage.local.clear(),
+  );
+
+  await page.close();
+}
+
+/**
  * Put a settings record into the extension's storage, the way a user who has
  * used the options page would have. A fresh page each time, so nothing about
  * the options page's own state carries over.
@@ -34,9 +52,9 @@ export async function seedSettings(context: BrowserContext, settings: unknown): 
     (value) =>
       (
         globalThis as unknown as {
-          chrome: { storage: { sync: { set(items: Record<string, unknown>): Promise<void> } } };
+          chrome: { storage: { local: { set(items: Record<string, unknown>): Promise<void> } } };
         }
-      ).chrome.storage.sync.set({ settings: value }),
+      ).chrome.storage.local.set({ settings: value }),
     settings,
   );
 

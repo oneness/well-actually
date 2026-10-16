@@ -7,18 +7,18 @@ import { webExtension } from "./browser";
 import { normalizeSettings, STORAGE_KEY, type Settings } from "./core/settings";
 
 export async function loadSettings(): Promise<Settings> {
-  const stored = await webExtension?.storage.sync.get(STORAGE_KEY);
+  const stored = await webExtension?.storage.local.get(STORAGE_KEY);
   return normalizeSettings(stored?.[STORAGE_KEY]);
 }
 
 /**
- * Throws when the browser refuses the write — most likely the sync quota, which
- * is a few kilobytes. The options page shows what went wrong rather than
- * reporting a save that did not happen.
+ * Throws when the browser refuses the write — most likely the quota, which is a
+ * few megabytes. The options page shows what went wrong rather than reporting a
+ * save that did not happen.
  */
 export async function saveSettings(settings: Settings): Promise<void> {
   if (webExtension === undefined) {
     throw new Error("no extension storage available");
   }
-  await webExtension.storage.sync.set({ [STORAGE_KEY]: settings });
+  await webExtension.storage.local.set({ [STORAGE_KEY]: settings });
 }

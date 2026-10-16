@@ -3,7 +3,7 @@ import { mkdtemp, rm } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
-import { EXTENSION_DIR, OPTIONS_URL, seedSettings } from "./extension";
+import { EXTENSION_DIR, OPTIONS_URL, clearSettings, seedSettings } from "./extension";
 
 const BASIC = "http://127.0.0.1:4173/basic.html";
 const REBUILD = "http://127.0.0.1:4173/rebuild.html";
@@ -161,6 +161,14 @@ test("reveals the original wording on hover", async () => {
   const correction = page.locator("#hero span.wa-replaced");
   await expect(correction).toHaveText("LLM");
   await expect(correction).toHaveAttribute("data-wa-original", "AI");
+  expect(await text("#hero")).toBe("LLM is coming for your job");
+});
+
+test("reveals by default, with nothing configured at all", async () => {
+  await clearSettings(context);
+  await page.reload();
+
+  await expect(page.locator("#hero span.wa-replaced")).toHaveCount(1);
   expect(await text("#hero")).toBe("LLM is coming for your job");
 });
 

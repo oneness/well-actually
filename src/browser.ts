@@ -14,7 +14,14 @@ export interface StorageArea {
 }
 
 export interface WebExtension {
-  storage: { sync: StorageArea };
+  /**
+   * `local`, not `sync`. The map is a few words the user typed, and keeping it
+   * on the machine means nothing about what they read leaves it. `sync` would
+   * carry the map through their browser account, which is a strange thing for
+   * an extension that argues about saying precisely what things are to do
+   * quietly in the background.
+   */
+  storage: { local: StorageArea };
 }
 
 declare global {

@@ -4,7 +4,7 @@ import { DEFAULT_SETTINGS, normalizeSettings } from "../src/core/settings";
 
 describe("normalizeSettings", () => {
   it("gives the built-in map when nothing has been stored", () => {
-    expect(normalizeSettings(undefined)).toEqual({ rules: [{ from: "AI", to: "LLM" }], reveal: false });
+    expect(normalizeSettings(undefined)).toEqual({ rules: [{ from: "AI", to: "LLM" }], reveal: true });
   });
 
   describe("falls back to the built-in map when the record is not usable", () => {
@@ -58,11 +58,18 @@ describe("normalizeSettings", () => {
   });
 
   describe("reveal", () => {
-    it("is on only when it is exactly true", () => {
+    it("is on by default, because it is what makes a correction checkable", () => {
+      expect(DEFAULT_SETTINGS.reveal).toBe(true);
+    });
+
+    it("is the user's answer when they have given one", () => {
       expect(normalizeSettings({ rules: [], reveal: true }).reveal).toBe(true);
       expect(normalizeSettings({ rules: [], reveal: false }).reveal).toBe(false);
-      expect(normalizeSettings({ rules: [], reveal: "yes" }).reveal).toBe(false);
-      expect(normalizeSettings({ rules: [] }).reveal).toBe(false);
+    });
+
+    it("falls back to the built-in answer when it is missing or is not a boolean", () => {
+      expect(normalizeSettings({ rules: [] }).reveal).toBe(DEFAULT_SETTINGS.reveal);
+      expect(normalizeSettings({ rules: [], reveal: "yes" }).reveal).toBe(DEFAULT_SETTINGS.reveal);
     });
   });
 

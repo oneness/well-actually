@@ -14,7 +14,7 @@ with "LLM" in page text as the reader sees it.
 - `src/options.ts` — the options page.
 - `src/browser.ts` — the `browser`/`chrome` shim, and the only hand-written
   declaration of a browser API.
-- `src/storage.ts` — the trip to `storage.sync`, with no opinions of its own.
+- `src/storage.ts` — the trip to `storage.local`, with no opinions of its own.
 - `static/` — `manifest.json`, the options page, `content.css`, icons, and
   anything else copied verbatim into `dist/`.
 - `tests/` — vitest for the pure functions, Playwright for the DOM half,

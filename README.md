@@ -29,7 +29,8 @@ and the joke wears off in a day. This one is meant to be left on.
 - Leaves alone the places where an edit would be wrong or rude: code samples
   (`<pre>`, `<code>`), text fields, `contenteditable` editors, `<script>`,
   `<style>`, and `<select>`.
-- The map is yours: an options page edits it, stored with `browser.storage.sync`.
+- The map is yours: an options page edits it, stored with `browser.storage.local`
+  and never sent anywhere.
 - Optionally, hovering a correction shows what the page actually said.
 
 It asks for one permission, `storage`, and nothing else. It reads the page; it
@@ -127,8 +128,8 @@ is what it is for.
 
 ## Hover to reveal
 
-A correction can show the original wording on hover, which is the feature that
-makes the extension trustworthy rather than merely confident. The tooltip reads
+A correction shows the original wording on hover, which is the feature that makes
+the extension checkable rather than merely confident. The tooltip reads
 `original: AI`; the wording is one string in `static/content.css` if you want it
 to say something else.
 
@@ -138,15 +139,17 @@ waits about a second before it appears, and an element holding this wording
 would be found and rewritten by the extension itself — the tooltip for a
 correction of "AI" contains "AI".
 
-It is off by default, because it has to wrap each correction in a `<span>`: a
-real element appearing in the page. A site that lays its text out as flex or
-grid items will notice one appearing, and its own CSS may style it. Two smaller
-consequences: the tooltip is positioned by the page's own layout, so a container
-with `overflow: hidden` can clip it, and the reveal is a pointer affordance — a
-screen reader gets the corrected text and no tooltip.
+It is on by default, and the cost of that is worth knowing: it wraps each
+correction in a `<span>`, a real element appearing in the page. A site that lays
+its text out as flex or grid items will notice one appearing, and its own CSS may
+style it. Two smaller consequences: the tooltip is positioned by the page's own
+layout, so a container with `overflow: hidden` can clip it, and the reveal is a
+pointer affordance — a screen reader gets the corrected text and no tooltip.
 
-Turning it on is a fair trade if you want to check what a page really said;
-leaving it off is the safe default.
+It is on by default because the alternative is worse: with it off there is
+nothing to hover, no marker on a corrected word, and no way to tell that the
+extension is doing anything at all. Turning it off is the safer choice on a page
+whose layout it breaks, and the options page has the switch.
 
 ## Development
 
@@ -175,7 +178,7 @@ then `firefox-devedition`) and because Playwright cannot drive stock Firefox wit
 an extension loaded. It installs the packaged XPI into a throwaway profile and
 launches Firefox headlessly, and the fixture page reports its own text back to
 the fixture server — so the check covers the thing that fails silently on
-Firefox: if `storage.sync` were unavailable, reading the settings would reject,
+Firefox: if `storage.local` were unavailable, reading the settings would reject,
 the content script would never sweep, and every page would look untouched. It is
 the same install a dogfooding profile gets, so a broken XPI fails here first.
 

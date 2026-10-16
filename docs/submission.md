@@ -47,8 +47,8 @@ asserts that difference is the only one.
   - *Single purpose*: "Replaces the word 'AI' with 'LLM' in the text of pages
     the user reads."
   - *Justification for `storage`*: "Stores the user's own list of word
-    substitutions, a few short pairs of text, so the same map applies on every
-    page and every device they browse from."
+    substitutions, a few short pairs of text, on the device, so the same map
+    applies on every page they read."
   - *Data collection*: none. Nothing is read from the page except the text being
     rewritten, and nothing is sent anywhere.
   - *Remote code*: none. Everything ships in the archive.
@@ -70,17 +70,16 @@ asserts that difference is the only one.
   JavaScript, but expect the "do you use a build tool?" question. Answer yes and
   point at this repository; `pnpm build` reproduces `dist/` exactly.
 
-## One nuance worth knowing before you tick "collects nothing"
+## The map never leaves the machine
 
-The map is stored with `storage.sync`, which is the browser's own sync service.
-The extension sends nothing anywhere, but if the user has sync enabled, their
-rule list travels through their Google or Mozilla account. That is the browser
-doing it, not the extension, and it is the honest description of what `sync`
-means.
+The map is stored with `storage.local`, so it stays on the device. Nothing the
+user reads and nothing they configure is sent anywhere by the extension, which
+makes "collects nothing" the plain description rather than a careful one.
 
-If that trade is unwanted, `storage.local` keeps the map on the device and the
-question disappears — at the cost of the map not following the user between
-machines. It is a one-line change in `src/browser.ts` and `src/storage.ts`.
+The cost is that the map does not follow them between machines. If that trade
+ever looks wrong, `storage.sync` is a one-line change in `src/browser.ts` and
+`src/storage.ts` — but then their rule list travels through their browser
+account, which is a stranger thing to do quietly.
 
 ## Still to be made
 

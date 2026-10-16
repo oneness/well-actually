@@ -14,7 +14,11 @@ export const STORAGE_KEY = "settings";
 export interface Settings {
   /** The map, in the order the user arranged it. */
   rules: Rule[];
-  /** Wrap each correction in a span, so hovering shows the original wording. */
+  /**
+   * Wrap each correction in a span, so hovering shows the original wording.
+   * On by default: it is the feature that makes the extension checkable, and an
+   * extension nobody can check is just a confident one.
+   */
   reveal: boolean;
 }
 
@@ -23,7 +27,7 @@ export interface Settings {
  * because callers own their rules array and will edit it.
  */
 function defaults(): Settings {
-  return { rules: [...DEFAULT_RULES], reveal: false };
+  return { rules: [...DEFAULT_RULES], reveal: true };
 }
 
 export const DEFAULT_SETTINGS: Settings = defaults();
@@ -47,7 +51,8 @@ function toRule(value: unknown): Rule | undefined {
  *
  * `undefined` means the user has never saved anything and gives the built-in
  * map. A list that is present but empty is a real choice — the extension does
- * nothing — and is left alone.
+ * nothing — and is left alone. A `reveal` that is not a boolean is treated as
+ * unset, so the built-in answer applies rather than an accidental `false`.
  */
 export function normalizeSettings(value: unknown): Settings {
   if (typeof value !== "object" || value === null) return defaults();
@@ -57,6 +62,6 @@ export function normalizeSettings(value: unknown): Settings {
 
   return {
     rules: rules.map(toRule).filter((rule): rule is Rule => rule !== undefined),
-    reveal: reveal === true,
+    reveal: typeof reveal === "boolean" ? reveal : defaults().reveal,
   };
 }
