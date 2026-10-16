@@ -54,6 +54,40 @@ describe("replaceText", () => {
     }
   });
 
+  describe("leaves dotted tokens alone", () => {
+    const cases: readonly [string, string][] = [
+      ["Bancs.AI", "Bancs.AI"],
+      ["the Bancs.AI site", "the Bancs.AI site"],
+      [".AI", ".AI"],
+      ["AI.com", "AI.com"],
+      ["AI.pdf", "AI.pdf"],
+      ["AI.io", "AI.io"],
+      ["see AI.md for the notes", "see AI.md for the notes"],
+    ];
+
+    for (const [input, expected] of cases) {
+      it(JSON.stringify(input), () => {
+        expect(replaceText(input, SWAP)).toBe(expected);
+      });
+    }
+  });
+
+  describe("still corrects a full stop", () => {
+    const cases: readonly [string, string][] = [
+      ["I like AI.", "I like LLM."],
+      ["He said. AI is here.", "He said. LLM is here."],
+      ["AI. And more AI.", "LLM. And more LLM."],
+      ["Is it AI? Yes, AI!", "Is it LLM? Yes, LLM!"],
+      ["AI...", "LLM..."],
+    ];
+
+    for (const [input, expected] of cases) {
+      it(JSON.stringify(input), () => {
+        expect(replaceText(input, SWAP)).toBe(expected);
+      });
+    }
+  });
+
   it("returns text that matches nothing unchanged", () => {
     const text = "Nothing to see here.";
     expect(replaceText(text, SWAP)).toBe(text);

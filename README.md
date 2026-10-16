@@ -21,6 +21,9 @@ and the joke wears off in a day. This one is meant to be left on.
 - Replaces `AI` with `LLM` in the page's visible text, as it renders.
 - Whole words only: `said`, `air`, `AIDS`, and `captain` are left alone, while
   `AI-powered` becomes `LLM-powered` and `AI's` becomes `LLM's`.
+- Dotted tokens are names rather than prose, so `Bancs.AI`, `AI.com`, and
+  `AI.pdf` are left alone — but a full stop after the word is not:
+  `I like AI.` still becomes `I like LLM.`
 - Case-sensitive: `Ai Weiwei` is not a language model.
 - The longest phrase wins, so `AI models → LLMs` is never swallowed by
   `AI → LLM`, whichever order you write them in.

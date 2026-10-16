@@ -78,6 +78,14 @@ test("replaces around punctuation, inside a hyphenated phrase, and repeatedly", 
   await expect(page.locator("#several")).toHaveText("LLM, LLM, and LLM again.");
 });
 
+test("leaves dotted tokens alone", async () => {
+  await expect(page.locator("#dotted")).toHaveText("The Bancs.AI site is not AI.com or AI.pdf.");
+});
+
+test("still corrects a full stop after the word", async () => {
+  await expect(page.locator("#fullstop")).toHaveText("I like LLM. It is an LLM world.");
+});
+
 test("leaves editors and code samples alone", async () => {
   expect(await page.locator("#editor").inputValue()).toBe("AI in a textarea");
   expect(await text("#editable")).toBe("AI in a contenteditable");

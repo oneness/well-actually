@@ -15,6 +15,20 @@ import { DEFAULT_RULES, type Rule } from "./rules";
 const NOT_WORD_BEFORE = "(?<![A-Za-z0-9_])";
 const NOT_WORD_AFTER = "(?![A-Za-z0-9_])";
 
+/**
+ * A dotted token is a name rather than prose. `Bancs.AI` is a domain and
+ * `AI.pdf` is a file; neither should be edited, and the first is the reason this
+ * exists.
+ *
+ * The two sides are not symmetric, because a full stop means different things in
+ * front of a word and behind it. A dot *before* a match always means a dotted
+ * token, since prose does not end a sentence and start the next word without a
+ * space. A dot *behind* one usually means the sentence ended — `AI.` — and only
+ * means a token when a word character follows it, as in `AI.com`.
+ */
+const NOT_DOTTED_BEFORE = "(?<!\\.)";
+const NOT_DOTTED_AFTER = "(?!\\.[A-Za-z0-9_])";
+
 /** Characters that mean something in a regular expression but must be literal here. */
 const REGEX_META = /[.*+?^${}()|[\]\\]/g;
 
@@ -51,7 +65,7 @@ function matcher(rules: readonly Rule[]): Matcher {
     const source = ordered
       .map((rule, index) => {
         const literal = rule.from.replace(REGEX_META, "\\$&");
-        return `(?<m${index}>${NOT_WORD_BEFORE}${literal}${NOT_WORD_AFTER})`;
+        return `(?<m${index}>${NOT_WORD_BEFORE}${NOT_DOTTED_BEFORE}${literal}${NOT_WORD_AFTER}${NOT_DOTTED_AFTER})`;
       })
       .join("|");
 
