@@ -166,7 +166,8 @@ checked against what addons.mozilla.org will accept before it is ever uploaded.
 
 `pnpm test:e2e` opens a real (non-headless) Chromium, because Chromium does not
 load extensions without one. Inside `nix develop` the browsers come from
-nixpkgs, so do not run `playwright install`.
+nixpkgs, so do not run `playwright install`. CI runs the same suite under
+`xvfb-run`, since a runner has no display.
 
 `pnpm check:firefox` is separate because it needs a real Firefox on the machine
 (`FIREFOX=/path/to/firefox` to choose one; by default it looks for `firefox`,
@@ -209,7 +210,6 @@ What to fill in at each store, and what is still missing, is in
 
 - Screenshots for the two listings, which want a browser and an eye rather than
   a build script.
-- The e2e suite in CI, which needs xvfb for the headed Chromium.
 - A switch to turn the extension off for one site, for the pages where you do
   want to read about AI.
 - More presets. The article-sound constraint above is the thing to keep in mind

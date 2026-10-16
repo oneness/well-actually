@@ -21,16 +21,25 @@ let context: BrowserContext;
 let page: Page;
 let userDataDir: string;
 
+/**
+ * Chromium picks Wayland when the build defaults to it, and exits if there is no
+ * Wayland session to connect to — which is what running under Xvfb looks like,
+ * and what CI does. If there is an X display and no Wayland one, say so.
+ */
+const ozoneArgs =
+  Boolean(process.env.DISPLAY) && !process.env.WAYLAND_DISPLAY ? ["--ozone-platform=x11"] : [];
+
 test.beforeAll(async () => {
   userDataDir = await mkdtemp(join(tmpdir(), "well-actually-"));
 
   context = await chromium.launchPersistentContext(userDataDir, {
     // Extensions are not loaded by headless Chromium. Run this where there is a
-    // display (or under xvfb-run in CI).
+    // display, or a virtual one.
     headless: false,
     args: [
       `--disable-extensions-except=${EXTENSION_DIR}`,
       `--load-extension=${EXTENSION_DIR}`,
+      ...ozoneArgs,
     ],
   });
 

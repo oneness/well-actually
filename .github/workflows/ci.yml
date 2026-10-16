@@ -23,9 +23,19 @@ jobs:
           cache: pnpm
 
       - run: pnpm install --frozen-lockfile
+
+      # Typecheck, unit tests, build, and the manifest checked against AMO's
+      # rules. First, so that a failure here does not wait on a browser.
       - run: pnpm check
 
-  # The Playwright suite is not run here: it loads the extension into a headed
-  # Chromium. On a developer's NixOS machine the browsers come from the flake
-  # (`nix develop`, then `pnpm test:e2e`), which is the only path that works
-  # there. Adding it to CI means porting that to xvfb, which is not yet done.
+      - run: pnpm exec playwright install --with-deps chromium
+
+      # The suite loads the extension into a headed Chromium, because Chromium
+      # does not load extensions headless, and a runner has no display. Under a
+      # virtual one it behaves the same as on a desk.
+      - run: xvfb-run -a pnpm test:e2e
+
+# Not run here: scripts/check-firefox.sh and scripts/check-package.sh. Both want
+# a real Firefox, and the one on a runner arrives as a snap, whose confinement
+# makes a throwaway profile awkward. They are release checks, run locally, and
+# the README says so.

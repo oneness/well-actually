@@ -60,6 +60,9 @@ with "LLM" in page text as the reader sees it.
   the manifest against AMO's rules), a change to the DOM half needs
   `pnpm test:e2e`, a change to how the extension starts up needs
   `pnpm check:firefox`, and anything being released needs `pnpm check:package`.
+  CI runs `pnpm check` and `pnpm test:e2e` (under `xvfb-run`, since a runner has
+  no display). The two Firefox checks stay local: they want a real Firefox, and
+  a runner's is a snap.
 - **Never hand-edit `static/manifest.json`'s `version`.** `build.mjs` stamps it
   from `package.json`.
 - **Keep the archives reproducible.** The pinned DOS timestamp in `package.mjs`
